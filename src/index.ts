@@ -1,0 +1,242 @@
+#!/usr/bin/env node
+
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { readDiagram } from "./tools/read.js";
+import { createDiagram } from "./tools/create.js";
+import { modifyDiagram } from "./tools/modify.js";
+import { renderDiagram } from "./tools/render.js";
+import {
+  readDiagramInputSchema,
+  createDiagramInputSchema,
+  modifyDiagramInputSchema,
+  renderDiagramInputSchema,
+} from "./schemas/spec.js";
+
+const server = new McpServer({
+  name: "excalidraw-mcp",
+  version: "0.1.0",
+});
+
+// === Tool: read_diagram ===
+
+server.tool(
+  "read_diagram",
+  "Read and parse an Excalidraw diagram (.excalidraw or .excalidraw.md). " +
+  "Returns a semantic GraphSummary with nodes, edges, groups, and other elements. " +
+  "Use this to understand diagram structure before making changes.",
+  readDiagramInputSchema.shape,
+  async (params) => {
+    try {
+      const result = await readDiagram(params);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result.summary, null, 2),
+          },
+        ],
+      };
+    } catch (err) {
+      return errorResult(err);
+    }
+  },
+);
+
+// === Tool: create_diagram ===
+
+server.tool(
+  "create_diagram",
+  "Create a new Excalidraw diagram from a declarative spec. " +
+  "Provide nodes and edges – the MCP handles coordinates, layout, bindings, and IDs. " +
+  "Output format is determined by file extension (.excalidraw or .excalidraw.md). " +
+  "Returns the created diagram's GraphSummary.",
+  createDiagramInputSchema.shape,
+  async (params) => {
+    try {
+      const result = await createDiagram(params);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              { path: result.path, summary: result.summary },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      return errorResult(err);
+    }
+  },
+);
+
+// === Tool: modify_diagram ===
+
+server.tool(
+  "modify_diagram",
+  "Apply semantic operations to an existing diagram. " +
+  "Operations: change_text, add_node, remove, connect, disconnect, restyle, reposition. " +
+  "All operations are atomic – if any fails, no changes are written. " +
+  "Target elements by ID or text content (errors on ambiguous matches). " +
+  "Returns updated GraphSummary.",
+  modifyDiagramInputSchema.shape,
+  async (params) => {
+    try {
+      const result = await modifyDiagram(params);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                operationsApplied: result.operationsApplied,
+                summary: result.summary,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (err) {
+      return errorResult(err);
+    }
+  },
+);
+
+// === Tool: render_diagram ===
+
+server.tool(
+  "render_diagram",
+  "Render an Excalidraw diagram to SVG (default) or PNG. " +
+  "Returns an inline image for visual verification. " +
+  "SVG rendering has no native dependencies. " +
+  "PNG rendering requires @resvg/resvg-js (falls back to SVG if unavailable).",
+  renderDiagramInputSchema.shape,
+  async (params) => {
+    try {
+      const result = await renderDiagram(params);
+      if (result.isBase64) {
+        return {
+          content: [
+            {
+              type: "image" as const,
+              data: result.data,
+              mimeType: result.mimeType,
+            },
+          ],
+        };
+      }
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: result.data,
+          },
+        ],
+      };
+    } catch (err) {
+      return errorResult(err);
+    }
+  },
+);
+
+// === Resource: excalidraw://schema ===
+
+server.resource(
+  "schema",
+  "excalidraw://schema",
+  {
+    description:
+      "Excalidraw element type definitions, valid style properties, and create_diagram spec format.",
+    mimeType: "application/json",
+  },
+  async () => ({
+    contents: [
+      {
+        uri: "excalidraw://schema",
+        mimeType: "application/json",
+        text: JSON.stringify(SCHEMA_REFERENCE, null, 2),
+      },
+    ],
+  }),
+);
+
+// === Start Server ===
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch((err) => {
+  console.error("Failed to start excalidraw-mcp:", err);
+  process.exit(1);
+});
+
+// === Helpers ===
+
+function errorResult(err: unknown) {
+  const message = err instanceof Error ? err.message : String(err);
+  return {
+    content: [{ type: "text" as const, text: `Error: ${message}` }],
+    isError: true,
+  };
+}
+
+const SCHEMA_REFERENCE = {
+  elementTypes: ["rectangle", "ellipse", "diamond", "arrow", "text", "line", "freedraw", "image", "frame"],
+  nodeTypes: ["rectangle", "ellipse", "diamond"],
+  styleProperties: {
+    strokeColor: "CSS color string (default: '#1e1e1e')",
+    backgroundColor: "CSS color string or 'transparent'",
+    fillStyle: "solid | hachure | cross-hatch | dots",
+    strokeWidth: "number (default: 2)",
+    strokeStyle: "solid | dashed | dotted",
+    roughness: "0 (precise) | 1 (normal) | 2 (rough)",
+    opacity: "0-100 (default: 100)",
+    fontSize: "number in pixels (default: 20)",
+    fontFamily: "1=Excalifont | 2=Nunito | 3=Cascadia | 4=Liberation | 5=CJK",
+  },
+  layoutTypes: ["vertical-flow", "horizontal-flow", "grid"],
+  operationTypes: [
+    "change_text",
+    "add_node",
+    "remove",
+    "connect",
+    "disconnect",
+    "restyle",
+    "reposition",
+  ],
+  createSpecExample: {
+    nodes: [
+      { type: "rectangle", text: "Start" },
+      { type: "diamond", text: "Decision?" },
+      { type: "rectangle", text: "End" },
+    ],
+    edges: [
+      { from: "Start", to: "Decision?" },
+      { from: "Decision?", to: "End", label: "yes" },
+    ],
+    layout: { type: "vertical-flow", spacing: 100 },
+  },
+  modifyExample: {
+    operations: [
+      { type: "change_text", target: "Start", text: "Begin" },
+      {
+        type: "add_node",
+        spec: { type: "rectangle", text: "New Step" },
+        position: { type: "relative", anchor: "End", direction: "below" },
+      },
+      { type: "connect", from: "End", to: "New Step" },
+      {
+        type: "restyle",
+        target: "Decision?",
+        style: { backgroundColor: "#ffc9c9", fillStyle: "solid" },
+      },
+    ],
+  },
+};
