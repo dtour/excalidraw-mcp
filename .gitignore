@@ -3,3 +3,4 @@ dist/
 *.tmp.*
 test/.tmp/
 test/.e2e-tmp/
+.DS_Store

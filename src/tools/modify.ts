@@ -11,6 +11,7 @@ import {
   removeElementClean,
   removeArrowClean,
 } from "../core/bindings.js";
+import { resolveOverlaps } from "../core/overlap.js";
 import {
   createShape,
   createArrow,
@@ -60,6 +61,9 @@ export async function modifyDiagram(input: ModifyDiagramInput): Promise<ModifyDi
         );
       }
     }
+
+    // Resolve text-line overlaps
+    elements = resolveOverlaps(elements);
 
     // Validate and repair bindings after all operations
     const violations = validateBindings(elements);

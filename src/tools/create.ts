@@ -4,6 +4,7 @@ import { createEmptyDocument } from "../core/parser.js";
 import { serializeDocument } from "../core/serializer.js";
 import { layoutDiagram } from "../core/layout.js";
 import { validateBindings, repairBindings } from "../core/bindings.js";
+import { resolveOverlaps } from "../core/overlap.js";
 import { toGraphSummary } from "../core/graph.js";
 import { generateId, generateSeed, generateVersionNonce } from "../core/ids.js";
 import type {
@@ -46,6 +47,9 @@ export async function createDiagram(input: CreateDiagramInput): Promise<CreateDi
       fillDefaults(partial),
     );
   }
+
+  // Resolve text-line overlaps
+  document.elements = resolveOverlaps(document.elements);
 
   // Validate and repair bindings
   const violations = validateBindings(document.elements);
