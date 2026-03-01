@@ -61,6 +61,61 @@ describe("parser", () => {
     });
   });
 
+  describe("error handling", () => {
+    it("should throw on truncated JSON", () => {
+      expect(() => parseFile("test.excalidraw", '{"type": "excali')).toThrow(
+        "Failed to parse Excalidraw JSON:",
+      );
+    });
+
+    it("should throw with 'may be corrupted' for non-JSON content", () => {
+      expect(() => parseFile("test.excalidraw", "this is not json at all")).toThrow(
+        "may be corrupted",
+      );
+    });
+
+    it("should throw descriptive error on empty string input", () => {
+      expect(() => parseFile("test.excalidraw", "")).toThrow(
+        "Failed to parse Excalidraw JSON:",
+      );
+    });
+
+    it("should throw on corrupted compressed-json in .excalidraw.md", () => {
+      // An empty compressed block decompresses to "" which is falsy,
+      // triggering the "Failed to decompress" error path.
+      const md = [
+        "---",
+        "excalidraw-plugin: parsed",
+        "---",
+        "%%",
+        "# Excalidraw Data",
+        "## Drawing",
+        "```compressed-json",
+        "",
+        "```",
+        "%%",
+      ].join("\n");
+
+      expect(() => parseFile("test.excalidraw.md", md)).toThrow(
+        "Failed to decompress LZ-String data",
+      );
+    });
+
+    it("should throw when .excalidraw.md has no data blocks", () => {
+      const md = [
+        "---",
+        "excalidraw-plugin: parsed",
+        "---",
+        "",
+        "Just some markdown with no data blocks.",
+      ].join("\n");
+
+      expect(() => parseFile("test.excalidraw.md", md)).toThrow(
+        "Could not find Excalidraw data",
+      );
+    });
+  });
+
   describe("createEmptyDocument", () => {
     it("should create a valid empty document", () => {
       const doc = createEmptyDocument();

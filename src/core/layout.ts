@@ -53,11 +53,26 @@ export function layoutDiagram(
     if (s.text) elements.push(s.text);
   }
 
-  // Create arrows
+  // Validate all edges first
+  const badEdges: string[] = [];
   for (const edge of edges) {
     const fromId = nodeIdMap.get(edge.from);
     const toId = nodeIdMap.get(edge.to);
-    if (!fromId || !toId) continue;
+    if (!fromId) badEdges.push(`edge "${edge.from}" -> "${edge.to}": source "${edge.from}" not found`);
+    else if (!toId) badEdges.push(`edge "${edge.from}" -> "${edge.to}": target "${edge.to}" not found`);
+  }
+  if (badEdges.length > 0) {
+    const available = nodes.map((n, i) => `"${n.text}" (index ${i})`).join(", ");
+    throw new Error(
+      `Edge(s) reference unknown node(s):\n  ${badEdges.join("\n  ")}\n` +
+      `Available nodes: ${available}`,
+    );
+  }
+
+  // Create arrows (all edges validated above)
+  for (const edge of edges) {
+    const fromId = nodeIdMap.get(edge.from)!;
+    const toId = nodeIdMap.get(edge.to)!;
 
     const fromShape = elements.find((e) => e.id === fromId)!;
     const toShape = elements.find((e) => e.id === toId)!;
@@ -146,13 +161,15 @@ function horizontalFlow(nodes: NodeSpec[], spacing: number): Point[] {
  */
 function gridLayout(nodes: NodeSpec[], spacing: number, columns: number): Point[] {
   const positions: Point[] = [];
+  const maxW = Math.max(...nodes.map(n => estimateNodeWidth(n)));
+  const maxH = Math.max(...nodes.map(n => estimateNodeHeight(n)));
 
   for (let i = 0; i < nodes.length; i++) {
     const col = i % columns;
     const row = Math.floor(i / columns);
     positions.push({
-      x: col * (200 + spacing),
-      y: row * (120 + spacing),
+      x: col * (maxW + spacing),
+      y: row * (maxH + spacing),
     });
   }
 

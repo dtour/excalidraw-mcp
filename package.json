@@ -2,7 +2,20 @@
   "name": "excalidraw-mcp",
   "version": "0.1.0",
   "description": "MCP server for reading, creating, modifying, and rendering Excalidraw diagrams",
+  "license": "MIT",
   "type": "module",
+  "keywords": [
+    "excalidraw",
+    "mcp",
+    "model-context-protocol",
+    "diagram",
+    "obsidian"
+  ],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "bin": {
     "excalidraw-mcp": "./dist/index.js"
   },

@@ -33,7 +33,16 @@ function detectFormat(filePath: string, content: string): FileFormat {
  * Parse a raw .excalidraw JSON file.
  */
 function parseExcalidraw(content: string): ExcalidrawDocument {
-  const data = JSON.parse(content);
+  let data: any;
+  try {
+    data = JSON.parse(content);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Failed to parse Excalidraw JSON: ${message}. ` +
+      `The file may be corrupted or not a valid Excalidraw document.`,
+    );
+  }
 
   return {
     type: "excalidraw",

@@ -4,6 +4,10 @@ A file-based MCP server that makes Excalidraw diagrams a first-class data type f
 
 Supports both `.excalidraw` (raw JSON) and `.excalidraw.md` (Obsidian plugin format with LZ-String compression).
 
+**Best suited for:** flowcharts, state machines, ER diagrams, architecture diagrams, and other graph-shaped diagrams (nodes connected by edges). The semantic abstraction works with rectangle, ellipse, and diamond shapes connected by arrows.
+
+**Not suited for:** wireframes, freeform sketches, annotated screenshots, or spatial layouts where precise positioning matters more than connectivity. These elements are readable via `read_diagram` (they appear in the `other` bucket) but cannot be created or meaningfully modified through the semantic API.
+
 ## Install
 
 ```bash
@@ -141,8 +145,13 @@ bun run build      # Build for distribution
 
 ## Known Limitations
 
-- Text measurement uses character-width averages; diagrams reflow slightly when opened in Excalidraw
-- No appState/files round-trip (viewport, theme, embedded images)
-- Straight-line arrow routing (Excalidraw applies curves on load)
-- No concurrency handling (last writer wins)
-- PNG rendering requires the optional `@resvg/resvg-js` package
+- **Text measurement** uses character-width averages; diagrams reflow slightly when opened in Excalidraw. *Workaround:* opening and saving in Excalidraw recalculates text metrics.
+- **No appState/files round-trip** – viewport position, theme, and embedded images are not preserved. *Workaround:* set these manually in Excalidraw after generation.
+- **Straight-line arrow routing** – arrows use direct point-to-point paths. *Workaround:* Excalidraw applies its own curve routing when you open the file.
+- **No concurrency handling** – last writer wins if the file is edited simultaneously.
+- **PNG rendering** requires the optional `@resvg/resvg-js` package. Falls back to SVG if unavailable.
+- **SVG renderer is simplified** – useful for checking topology (are the right things connected?) but does not match Excalidraw's visual fidelity (no roughness, no hachure fills).
+
+## License
+
+[MIT](LICENSE)

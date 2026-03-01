@@ -1,4 +1,4 @@
-import { writeFile, rename } from "node:fs/promises";
+import { writeFile, rename, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createEmptyDocument } from "../core/parser.js";
 import { serializeDocument } from "../core/serializer.js";
@@ -107,5 +107,11 @@ async function atomicWrite(path: string, content: string): Promise<void> {
   const absPath = resolve(path);
   const tempPath = absPath + ".tmp." + Date.now();
   await writeFile(tempPath, content, "utf-8");
-  await rename(tempPath, absPath);
+  try {
+    await rename(tempPath, absPath);
+  } catch (err) {
+    // Clean up temp file on failed rename
+    try { await unlink(tempPath); } catch {}
+    throw err;
+  }
 }

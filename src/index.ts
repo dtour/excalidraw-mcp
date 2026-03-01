@@ -28,7 +28,8 @@ server.tool(
   readDiagramInputSchema.shape,
   async (params) => {
     try {
-      const result = await readDiagram(params);
+      const validated = readDiagramInputSchema.parse(params);
+      const result = await readDiagram(validated);
       return {
         content: [
           {
@@ -54,7 +55,8 @@ server.tool(
   createDiagramInputSchema.shape,
   async (params) => {
     try {
-      const result = await createDiagram(params);
+      const validated = createDiagramInputSchema.parse(params);
+      const result = await createDiagram(validated);
       return {
         content: [
           {
@@ -85,7 +87,8 @@ server.tool(
   modifyDiagramInputSchema.shape,
   async (params) => {
     try {
-      const result = await modifyDiagram(params);
+      const validated = modifyDiagramInputSchema.parse(params);
+      const result = await modifyDiagram(validated);
       return {
         content: [
           {
@@ -118,7 +121,8 @@ server.tool(
   renderDiagramInputSchema.shape,
   async (params) => {
     try {
-      const result = await renderDiagram(params);
+      const validated = renderDiagramInputSchema.parse(params);
+      const result = await renderDiagram(validated);
       if (result.isBase64) {
         return {
           content: [

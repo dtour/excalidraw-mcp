@@ -1,4 +1,4 @@
-import { readFile, writeFile, rename } from "node:fs/promises";
+import { readFile, writeFile, rename, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseFile } from "../core/parser.js";
 import { serializeDocument } from "../core/serializer.js";
@@ -312,11 +312,11 @@ function resolvePosition(
     case "below":
       return { x: anchor.x, y: anchor.y + anchor.height + gap };
     case "above":
-      return { x: anchor.x, y: anchor.y - gap - 100 }; // 100 = estimated height
+      return { x: anchor.x, y: anchor.y - gap - anchor.height };
     case "right":
       return { x: anchor.x + anchor.width + gap, y: anchor.y };
     case "left":
-      return { x: anchor.x - gap - 100, y: anchor.y };
+      return { x: anchor.x - gap - anchor.width, y: anchor.y };
   }
 }
 
@@ -324,5 +324,11 @@ async function atomicWrite(path: string, content: string): Promise<void> {
   const absPath = resolve(path);
   const tempPath = absPath + ".tmp." + Date.now();
   await writeFile(tempPath, content, "utf-8");
-  await rename(tempPath, absPath);
+  try {
+    await rename(tempPath, absPath);
+  } catch (err) {
+    // Clean up temp file on failed rename
+    try { await unlink(tempPath); } catch {}
+    throw err;
+  }
 }

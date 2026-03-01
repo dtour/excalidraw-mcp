@@ -85,6 +85,12 @@ function renderToSvg(elements: ExcalidrawElement[], scale: number): string {
 
   const svgElements: string[] = [];
 
+  function rotationAttr(el: ExcalidrawElement, x: number, y: number): string {
+    if (!el.angle) return "";
+    const deg = el.angle * (180 / Math.PI);
+    return ` transform="rotate(${deg}, ${x + el.width / 2}, ${y + el.height / 2})"`;
+  }
+
   for (const el of elements) {
     const x = el.x + offsetX;
     const y = el.y + offsetY;
@@ -97,7 +103,7 @@ function renderToSvg(elements: ExcalidrawElement[], scale: number): string {
       case "rectangle":
         svgElements.push(
           `<rect x="${x}" y="${y}" width="${el.width}" height="${el.height}" ` +
-          `stroke="${stroke}" fill="${fill}" stroke-width="${sw}" opacity="${opacity}" rx="8"/>`,
+          `stroke="${stroke}" fill="${fill}" stroke-width="${sw}" opacity="${opacity}" rx="8"${rotationAttr(el, x, y)}/>`,
         );
         break;
 
@@ -105,18 +111,16 @@ function renderToSvg(elements: ExcalidrawElement[], scale: number): string {
         svgElements.push(
           `<ellipse cx="${x + el.width / 2}" cy="${y + el.height / 2}" ` +
           `rx="${el.width / 2}" ry="${el.height / 2}" ` +
-          `stroke="${stroke}" fill="${fill}" stroke-width="${sw}" opacity="${opacity}"/>`,
+          `stroke="${stroke}" fill="${fill}" stroke-width="${sw}" opacity="${opacity}"${rotationAttr(el, x, y)}/>`,
         );
         break;
 
       case "diamond": {
         const cx = x + el.width / 2;
         const cy = y + el.height / 2;
-        const hw = el.width / 2;
-        const hh = el.height / 2;
         svgElements.push(
           `<polygon points="${cx},${y} ${x + el.width},${cy} ${cx},${y + el.height} ${x},${cy}" ` +
-          `stroke="${stroke}" fill="${fill}" stroke-width="${sw}" opacity="${opacity}"/>`,
+          `stroke="${stroke}" fill="${fill}" stroke-width="${sw}" opacity="${opacity}"${rotationAttr(el, x, y)}/>`,
         );
         break;
       }
@@ -127,9 +131,19 @@ function renderToSvg(elements: ExcalidrawElement[], scale: number): string {
           const points = el.points
             .map(([px, py]) => `${x + px},${y + py}`)
             .join(" ");
+          let markerAttr = "";
+          if (el.type === "arrow" && el.endArrowhead) {
+            const markerId = `arrowhead-${el.id}`;
+            svgElements.push(
+              `<defs><marker id="${markerId}" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">` +
+              `<polygon points="0 0, 10 3.5, 0 7" fill="${stroke}"/>` +
+              `</marker></defs>`,
+            );
+            markerAttr = ` marker-end="url(#${markerId})"`;
+          }
           svgElements.push(
             `<polyline points="${points}" stroke="${stroke}" fill="none" ` +
-            `stroke-width="${sw}" opacity="${opacity}" marker-end="${el.type === "arrow" && el.endArrowhead ? 'url(#arrowhead)' : ''}"/>`,
+            `stroke-width="${sw}" opacity="${opacity}"${markerAttr}${rotationAttr(el, x, y)}/>`,
           );
         }
         break;
@@ -142,7 +156,12 @@ function renderToSvg(elements: ExcalidrawElement[], scale: number): string {
             const ly = y + fontSize + i * (fontSize * 1.2);
             return `<text x="${x}" y="${ly}" font-size="${fontSize}" fill="${stroke}" opacity="${opacity}" font-family="sans-serif">${escapeXml(line)}</text>`;
           });
-          svgElements.push(textEls.join("\n"));
+          const rot = rotationAttr(el, x, y);
+          if (rot) {
+            svgElements.push(`<g${rot}>\n${textEls.join("\n")}\n</g>`);
+          } else {
+            svgElements.push(textEls.join("\n"));
+          }
         }
         break;
     }
@@ -150,11 +169,6 @@ function renderToSvg(elements: ExcalidrawElement[], scale: number): string {
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.ceil(width)}" height="${Math.ceil(height)}" viewBox="0 0 ${Math.ceil(width / scale)} ${Math.ceil(height / scale)}">`,
-    `<defs>`,
-    `  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">`,
-    `    <polygon points="0 0, 10 3.5, 0 7" fill="#1e1e1e"/>`,
-    `  </marker>`,
-    `</defs>`,
     ...svgElements,
     `</svg>`,
   ].join("\n");
