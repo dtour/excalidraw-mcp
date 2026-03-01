@@ -17,7 +17,7 @@ bun add excalidraw-mcp
 Or build from source:
 
 ```bash
-git clone https://github.com/user/excalidraw-mcp.git
+git clone https://github.com/dtour/excalidraw-mcp.git
 cd excalidraw-mcp
 bun install && bun run build
 ```

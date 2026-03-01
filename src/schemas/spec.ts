@@ -24,9 +24,9 @@ export const absolutePositionSchema = z.object({
 
 export const relativePositionSchema = z.object({
   type: z.literal("relative"),
-  anchor: z.string().describe("Element ID or text to position relative to"),
+  anchor: z.string(),
   direction: z.enum(["above", "below", "left", "right"]),
-  gap: z.number().optional().describe("Gap in pixels (default: 80)"),
+  gap: z.number().optional(),
 });
 
 export const positionSchema = z.discriminatedUnion("type", [
@@ -43,8 +43,8 @@ export const nodeSpecSchema = z.object({
 });
 
 export const edgeSpecSchema = z.object({
-  from: z.string().describe("Node text or index (e.g. '0', '1')"),
-  to: z.string().describe("Node text or index (e.g. '0', '1')"),
+  from: z.string(),
+  to: z.string(),
   label: z.string().optional(),
   style: nodeStyleSchema.optional(),
 });
@@ -53,8 +53,8 @@ export const edgeSpecSchema = z.object({
 
 export const layoutSchema = z.object({
   type: z.enum(["vertical-flow", "horizontal-flow", "grid"]).default("vertical-flow"),
-  spacing: z.number().optional().describe("Gap between elements in pixels (default: 80)"),
-  columns: z.number().optional().describe("Number of columns for grid layout"),
+  spacing: z.number().optional(),
+  columns: z.number().optional(),
 });
 
 // === Create Diagram Spec ===
@@ -75,8 +75,8 @@ export const createSpecSchema = z.union([createHighLevelSchema, createLowLevelSc
 
 export const changeTextOpSchema = z.object({
   type: z.literal("change_text"),
-  target: z.string().describe("Element ID or text content to match"),
-  text: z.string().describe("New text content"),
+  target: z.string(),
+  text: z.string(),
 });
 
 export const addNodeOpSchema = z.object({
@@ -87,31 +87,31 @@ export const addNodeOpSchema = z.object({
 
 export const removeOpSchema = z.object({
   type: z.literal("remove"),
-  target: z.string().describe("Element ID or text content to match"),
+  target: z.string(),
 });
 
 export const connectOpSchema = z.object({
   type: z.literal("connect"),
-  from: z.string().describe("Source element ID or text"),
-  to: z.string().describe("Target element ID or text"),
+  from: z.string(),
+  to: z.string(),
   label: z.string().optional(),
 });
 
 export const disconnectOpSchema = z.object({
   type: z.literal("disconnect"),
-  from: z.string().describe("Source element ID or text"),
-  to: z.string().describe("Target element ID or text"),
+  from: z.string(),
+  to: z.string(),
 });
 
 export const restyleOpSchema = z.object({
   type: z.literal("restyle"),
-  target: z.string().describe("Element ID or text content to match"),
+  target: z.string(),
   style: nodeStyleSchema,
 });
 
 export const repositionOpSchema = z.object({
   type: z.literal("reposition"),
-  target: z.string().describe("Element ID or text content to match"),
+  target: z.string(),
   position: positionSchema,
 });
 
@@ -128,21 +128,21 @@ export const modifyOperationSchema = z.discriminatedUnion("type", [
 // === Tool Input Schemas ===
 
 export const readDiagramInputSchema = z.object({
-  path: z.string().describe("Path to the .excalidraw or .excalidraw.md file"),
+  path: z.string(),
 });
 
 export const createDiagramInputSchema = z.object({
-  path: z.string().describe("Output path (.excalidraw or .excalidraw.md)"),
+  path: z.string(),
   spec: createSpecSchema,
 });
 
 export const modifyDiagramInputSchema = z.object({
-  path: z.string().describe("Path to the existing diagram file"),
+  path: z.string(),
   operations: z.array(modifyOperationSchema).min(1),
 });
 
 export const renderDiagramInputSchema = z.object({
-  path: z.string().describe("Path to the diagram file to render"),
+  path: z.string(),
   format: z.enum(["svg", "png"]).optional().default("svg"),
   scale: z.number().min(0.1).max(4).optional().default(1),
 });

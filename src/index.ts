@@ -22,9 +22,7 @@ const server = new McpServer({
 
 server.tool(
   "read_diagram",
-  "Read and parse an Excalidraw diagram (.excalidraw or .excalidraw.md). " +
-  "Returns a semantic GraphSummary with nodes, edges, groups, and other elements. " +
-  "Use this to understand diagram structure before making changes.",
+  "Read an Excalidraw diagram and return its GraphSummary (nodes, edges, groups). Supports .excalidraw and .excalidraw.md.",
   readDiagramInputSchema.shape,
   async (params) => {
     try {
@@ -48,10 +46,7 @@ server.tool(
 
 server.tool(
   "create_diagram",
-  "Create a new Excalidraw diagram from a declarative spec. " +
-  "Provide nodes and edges – the MCP handles coordinates, layout, bindings, and IDs. " +
-  "Output format is determined by file extension (.excalidraw or .excalidraw.md). " +
-  "Returns the created diagram's GraphSummary.",
+  "Create a new Excalidraw diagram from nodes/edges. Read excalidraw://schema for spec format.",
   createDiagramInputSchema.shape,
   async (params) => {
     try {
@@ -79,11 +74,7 @@ server.tool(
 
 server.tool(
   "modify_diagram",
-  "Apply semantic operations to an existing diagram. " +
-  "Operations: change_text, add_node, remove, connect, disconnect, restyle, reposition. " +
-  "All operations are atomic – if any fails, no changes are written. " +
-  "Target elements by ID or text content (errors on ambiguous matches). " +
-  "Returns updated GraphSummary.",
+  "Apply atomic operations to an existing diagram. Target elements by ID or text. Read excalidraw://schema for operations.",
   modifyDiagramInputSchema.shape,
   async (params) => {
     try {
@@ -114,10 +105,7 @@ server.tool(
 
 server.tool(
   "render_diagram",
-  "Render an Excalidraw diagram to SVG (default) or PNG. " +
-  "Returns an inline image for visual verification. " +
-  "SVG rendering has no native dependencies. " +
-  "PNG rendering requires @resvg/resvg-js (falls back to SVG if unavailable).",
+  "Render an Excalidraw diagram to SVG or PNG. Returns an inline image.",
   renderDiagramInputSchema.shape,
   async (params) => {
     try {
